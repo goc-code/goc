@@ -1,2 +1,2 @@
 # goc
-library of everything
+library of nothing
