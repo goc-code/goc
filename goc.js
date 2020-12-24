@@ -6,7 +6,9 @@
 
 window.goc = (function () {
     var totalPreloades = 0;
+    var randomShit = true;
     var progressLoaded = 0;
+    var timeTonHelperTrueVariable = true;
     var assetsLoadedTrue = false, jLift = false;
     var some = {};
     var testArray = [];
@@ -37,7 +39,7 @@ window.goc = (function () {
             for (let i = 0; i < array.length; i++) {
                 this.loadedImages++;
                 this.temperoryArray[i] = new Image();
-                this.temperoryArray[i].src = array[i] + "." + type[1];
+                this.temperoryArray[i].src = array[i];
                 if (i > (array.length - 2)) {
                     this.loaded = this.temperoryArray;
                     this.temperoryArray = [];
@@ -52,8 +54,56 @@ window.goc = (function () {
 
         return this.loaded;
     }
+    class Preloader{
+        constructor(src){
+            this.src = src;
+            this.loadedA = 0;
+            this.finalArray = [];
+            var p = new Promise((res, rej)=>{
+                this.src.forEach(sr=>{
+                    let a = new Image();
+                    a.src = sr;
+                    a.onload =()=>{
+                        this.loadedA++;
+                        this.finalArray.push(a);
+                        if(this.loadedA == (this.src.length - 1)){
+                            res(this.finalArray);
+                        }
+                    }
+                });
+            });
+            goc.promises.push(p);
+            return p;
+        }
+    }
 
-    
+class PreloaderMultiple{
+    constructor(src, type){
+        this.src = src;
+        this.type = type;
+        this.loadedArray = [];
+        this.testArray = [];
+        this.noOfLoaded = 0;
+        var bj = new Promise((res, rej)=>{
+            for(let i = 0; i < this.src.length; i++){
+                for(let j = 0; j < this.type[i]; j++){
+                    this.loadedArray[i] = new Image();
+                    this.loadedArray[i].src = this.src[i] + "_" + j + "." + this.type[1];
+                    this.loadedArray[i].onload = () =>{
+                        this.testArray.push(this.loadedArray[i]);
+                        this.noOfLoaded++;
+                        if(this.noOfLoaded == this.type[0]){
+                            res(this.testArray);
+                            this.testArray = [];
+                        }
+                    }
+                }
+            }
+        });
+        goc.promises.push(bj);
+        return bj;
+    }
+}
     
     function GOC_SPRITE_ANIMATOR(x, y, width, height) {
         this.x = x;
@@ -383,32 +433,6 @@ window.goc = (function () {
     }
     
     function update(elapsed, player, def) {
-        if(player.area = "left-half"){
-            if (startA && startY < player.canvas.height/2) {
-                joyStick.outerX = 100;
-                joyStick.outerY = 100;
-                joyStick.innerX = startX;
-                joyStick.innerY = startY;
-            }else{
-                jRight = false;
-                jLeft = false;
-                jUp = false;
-                jDown = false;
-            }
-            if (move && posY < player.canvas.height / 2) {
-                joyStick.innerX = posX;
-                joyStick.innerY = posY;
-            }else{
-                jRight = false;
-                jLeft = false;
-                jUp = false;
-                jDown = false;
-            }
-            if (ended) {
-                joyStick.innerX = 100;
-                joyStick.innerY = 100;
-            }
-        }else{
             if (startA) {
                 joyStick.outerX = startX;
                 joyStick.outerY = startY;
@@ -423,8 +447,6 @@ window.goc = (function () {
                 joyStick.innerX = startX;
                 joyStick.innerY = startY;
             }
-        }
-
         
         xAxis.x1 = joyStick.outerX;
         xAxis.y1 = joyStick.outerY;
@@ -643,7 +665,9 @@ window.goc = (function () {
             this.y = y;
             this.src = src;
             this.width = width;
+            this.touch = false;
             this.height = height;
+            this.makeTouch = false;
             if(this.src){
                 this.image = new Image();
                 this.image.src = this.src;
@@ -658,7 +682,8 @@ window.goc = (function () {
             }
 
         }
-        touched(c){
+        touched(c, time){
+            this.time = time || 0;
             this.canvas = c;
             c.addEventListener("touchstart", (e)=>{
             e.preventDefault();
@@ -666,15 +691,18 @@ window.goc = (function () {
                 let x = e.touches[i].clientX;
                 let y = e.touches[i].clientY;
                 if(x > this.x && y > this.y && x < this.x + this.width && y < this.y + this.height){
-                   this.touch = true; 
+                    if(this.touch == false && this.makeTouch == false){
+                        this.touch = true; 
+                    }
                 }
             }
             
             c.addEventListener("touchend", (e)=>{
                 let x = Math.floor(e.changedTouches[event.changedTouches.length - 1].pageX);
                 let y = Math.floor(e.changedTouches[event.changedTouches.length - 1].pageY);
-                if(y > this.canvas.height/2){
-                   this.touch = false; 
+                if(this.makeTouch == false){
+                    this.makeTouch = true; 
+                    this.endedTime = Date.now();
                 }
             });
 
@@ -687,8 +715,8 @@ window.goc = (function () {
         customize(){
             this.canvas.addEventListener("touchstart", this.handle)
             goc.createJoystick(this, {
-                def : true,
-                power : 1
+                def : false,
+                power : 3
             });
             this.custom = true;
         }
@@ -713,6 +741,13 @@ window.goc = (function () {
                     cY = 0;
                  }
             }
+            if(this.makeTouch){
+                let now = Date.now();
+                if(now - this.endedTime > this.time){
+                    this.makeTouch = false;
+                    this.touch = false;
+                }
+            }
         }
     }
 
@@ -730,6 +765,8 @@ window.goc = (function () {
             this.width = width;
             this.height = height;
             this.health = health;
+            this.healthLevel = health;
+            this.oneTime = 0;
         }
         draw(c){
             //outerBar
@@ -737,12 +774,73 @@ window.goc = (function () {
             c.fillStyle = "white";
             c.strokeStyle = "black";
             c.fillRect(this.x, this.y, this.width, this.height);
+            c.strokeRect(this.x, this.y, this.width, this.height);
+            c.closePath();
+            //innerBar
+            c.beginPath();
+            c.fillStyle = "green";
+            c.strokeStyle = "black";
+            c.fillRect(this.x, this.y, (this.width *  this.healthLevel) / this.health , this.height);
+            c.closePath();
+        }
+        restart(health){
+            if(this.healthLevel < ( health || 0)){
+                this.healthLevel = this.health;
+            }
+        }
+        restore(){
+            this.healthLevel = this.health;
+        }
+        decrease(level){
+            this.healthLevel -= level;
+        }
+        decreaseAnim(level, e, time){
+            time = time || 2000;
+            randomShit = goc.singleTon(randomShit, ()=>{ window.timeChecker = Date.now() });
+            let nowRJH = Date.now();
+            if((nowRJH - timeChecker) < time){
+                this.healthLevel -= level * (e / time);
+            }
         }
     }
 
-
     //Health Bar End
 
+    /*************ALL-PRELOADER*************/
+
+    function allPromisesLoaded(names){
+        let weirdPromise = new Promise((res, rej)=>{
+        Promise.all(goc.promises).then(data => {
+                let obj = {};
+                for(let i = 0; i < data.length; i++){
+                    obj[names[i]] = data[i];
+                    if(i == (data.length - 1)){
+                        res(obj);
+                        goc.loadingFinish = true;
+                    }
+                }
+            });
+        });
+        return weirdPromise;
+    }
+
+    /****SINGLETON*****/
+
+    
+    function single(a, cb){
+        if(a){
+            cb();
+            a = false;
+        }
+        return a;
+    }
+
+    function timeBased(currentTime, time, cb){
+        let now = Date.now();
+        if((now - currentTime) < time){
+            cb();
+        }
+    }
         
     var someRandomShit;
     var joystickActive = false;
@@ -752,7 +850,9 @@ window.goc = (function () {
     var elapsed = 0;
     var ctx, count = 0;
     var goc = {
-        createCanvas: function (width, height, id) {
+        promises : []
+        ,loadingFinish : false
+        ,createCanvas: function (width, height, id) {
             let canvas = document.createElement("canvas");
             canvas.style.border = "2px solid black";
             canvas.id = id || "canvas";
@@ -976,6 +1076,22 @@ window.goc = (function () {
         }
         ,healthBar : function(x, y, width, height, health){
             return new HealthBar(x, y, width, height, health);
+        }
+        ,singleTon : function(a, cb){
+            return single(a, cb);
+        }
+        ,timeTon : function(time, cb){
+            timeTonHelperTrueVariable = goc.singleTon(timeTonHelperTrueVariable, ()=>{ window.ct = Date.now() });
+            return timeBased(ct, time, cb);
+        }
+        ,preloadTon : function(src){
+            return new Preloader(src);
+        }
+        ,preloadMultiple : function(src, type){
+            return new PreloaderMultiple(src, type);
+        }
+        ,allAssetsLoaded : function(names){
+            return allPromisesLoaded(names);
         }
     }
     return goc;
