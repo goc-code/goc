@@ -1,16 +1,44 @@
 
-//create by GOC_OF_CODING
-//dont steal :-)
-
-//alert(window.innerHeight); //546, 457
+/*
+ * Name          : goc.js
+ * @author       : GOD_OF_CODING
+ * Last modified : 12/25/2020
+ * Revision      : 0.0.1
+ *
+ * Modification History:
+ * Date         Version     Modified By		Description
+ * 12/25/2020   0.0.1       GOD_OF_CODING  [simple canvas project]
+ * The MIT License (MIT)
+ *
+ *	Copyright (c) 2020 GOD_OF_CODING.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+window.global = {};
+global.someTrue = true;
+global.loadedTrue = true;
+global.loadedItems = 0;
 
 window.goc = (function () {
-    var totalPreloades = 0;
     var randomShit = true;
     var progressLoaded = 0;
     var timeTonHelperTrueVariable = true;
-    var assetsLoadedTrue = false, jLift = false;
-    var some = {};
     var testArray = [];
     
     function GOC_PRELOADER(array, type, noOfImages) {
@@ -60,24 +88,33 @@ window.goc = (function () {
             this.loadedA = 0;
             this.finalArray = [];
             var p = new Promise((res, rej)=>{
-                this.src.forEach(sr=>{
-                    let a = new Image();
-                    a.src = sr;
-                    a.onload =()=>{
-                        this.loadedA++;
-                        this.finalArray.push(a);
-                        if(this.loadedA == (this.src.length - 1)){
-                            res(this.finalArray);
-                        }
-                    }
-                });
+                this.asyncLoader(()=>{
+                    res(this.finalArray);
+                 }, this.src);
             });
             goc.promises.push(p);
             return p;
         }
+        asyncLoader = async (cb, srcs) =>{
+            for(let i = 0; i < srcs.length;){
+                let a = new Image();
+                let p = new Promise((res, rej)=>{
+                    a.src = this.src[i];
+                    a.onload = () =>{
+                        res(a);
+                    }
+                });
+                let result = await p;
+                this.finalArray.push(result);
+                if(i == (this.src.length - 1)){
+                    cb();
+                }
+                i++;
+            }
     }
+}
 
-class PreloaderMultiple{
+class AsynPreloaderMultiple{
     constructor(src, type){
         this.src = src;
         this.type = type;
@@ -103,6 +140,47 @@ class PreloaderMultiple{
         goc.promises.push(bj);
         return bj;
     }
+}
+
+class PreloaderMultiple{
+    constructor(src, type){
+        this.src = src;
+        this.type = type;
+        this.loadedArray = [];
+        this.testArray = [];
+        this.noOfLoaded = 0;
+        var bj = new Promise((res, rej)=>{
+            this.asyncLoader((arr)=>{
+                res(arr);
+            }, this.src)
+        });
+        goc.promises.push(bj);
+        return bj;
+    }
+
+    asyncLoader = async (cb, srcs) =>{
+        for(let i = 0; i < this.src.length;){
+            for(let j = 0; j < this.type[i];){
+                let  allow = new Promise((res, rej)=>{
+                    this.loadedArray[i] = new Image();
+                    this.loadedArray[i].src = this.src[i] + "_" + j + "." + this.type[1];
+                    this.loadedArray[i].onload = () =>{
+                        res(this.loadedArray[i]);
+                    }
+            });
+            let result = await allow;
+            this.testArray.push(result);
+            this.noOfLoaded++;
+            j++;
+            if(this.noOfLoaded == this.type[0]){
+                cb(this.testArray);
+                this.testArray = [];
+                i++;
+            }
+        }
+        }
+    }
+    
 }
     
     function GOC_SPRITE_ANIMATOR(x, y, width, height) {
@@ -148,12 +226,12 @@ class PreloaderMultiple{
         if (this.options.flip && this.imagesStack[Math.ceil(this.i)] != undefined) {
             ctx.translate(this.x + this.height, this.y);
             ctx.scale(-1, 1);
-            ctx.drawImage(this.imagesStack[Math.ceil(this.i)], 0, 0, options.imageWidth, options.imageHeight, 0, 0, options.width || this.width, options.height || this.height);
+            ctx.drawImage(this.imagesStack[Math.ceil(this.i)], 0, 0, (this.imagesStack[Math.ceil(this.i)].width || options.imageWidth), (this.imagesStack[Math.ceil(this.i)].height ||  options.imageHeight), 0, 0, options.width || this.width, options.height || this.height);
             ctx.setTransform(1, 0, 0, 1, 0, 0);
         } else {
             if(this.imagesStack[Math.ceil(this.i)] != undefined){
                 ctx.translate(this.x, this.y);
-                ctx.drawImage(this.imagesStack[Math.ceil(this.i)], 0, 0, options.imageWidth, options.imageHeight, 0, 0, options.width || this.width, options.height || this.height);
+                ctx.drawImage(this.imagesStack[Math.ceil(this.i)], 0, 0, (this.imagesStack[Math.ceil(this.i)].width||options.imageWidth), (this.imagesStack[Math.ceil(this.i)].height || options.imageHeight), 0, 0, options.width || this.width, options.height || this.height);
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
             }
         }
@@ -170,8 +248,8 @@ class PreloaderMultiple{
     }
     GOC_SPRITE_ANIMATOR2.prototype.draw = function (ctx, elapsed, options) {
         this.setOptions(options);
-        this.widthI = this.options.imageWidth / this.options.cols;
-        this.heightI = this.options.imageHeight / this.options.rows;
+        this.widthI = (this.options.image.width || this.options.imageWidth) / this.options.cols;
+        this.heightI = (this.options.image.height || this.options.imageHeight) / this.options.rows;
         this.updateFrame(elapsed);
         ctx.drawImage(this.options.image, this.srcX, this.srcY, this.widthI, this.heightI, this.x, this.y, this.width, this.height);
     }
@@ -183,6 +261,10 @@ class PreloaderMultiple{
         }
         magnitude(){
             return Math.sqrt(this.x * this.x + this.y * this.y);
+        }
+        addScaledVector(vector, factor){
+            this.x += (vector.x * factor);
+            this.y += (vector.y * factor);
         }
         squaredMagnitude(){
             return this.x * this.x + this.y * this.y;
@@ -242,7 +324,34 @@ class PreloaderMultiple{
         normalize(){
             return new Vector2(this.x / this.magnitude(), this.y / this.magnitude());
         }
+        damping(damp, e){
+            this.x *= Math.pow(damp, e);
+            this.y *= Math.pow(damp, e);
+        }
     }    
+
+    class Particle{
+        constructor(pos, vel, acc){
+            this.pos = pos || new Vector2(0, 0);
+            this.vel = vel || new Vector2(0, 0);
+            this.acc = acc || new Vector2(0, 0);
+            this.damping = 0.99;
+            this.inverseMass;
+            this.radius = 30;
+            this.bounceOnce = true;
+            this.bounchOneTime = true;
+        }
+        update(e){
+            console.log("hi");
+        }
+        draw(c){
+            c.beginPath();
+            c.arc(this.pos.x, this.pos.y, this.radius, 0, 2 * Math.PI);
+            c.fill();
+            c.closePath()
+        }
+
+    }
 
     class Pendulum{
         constructor(origin, length, radius, options){
@@ -296,7 +405,7 @@ class PreloaderMultiple{
         this.innerX = innerX;
         this.innerY = innerY;
         this.draw = (ctx) => {
-            if(options.outerImage == undefined){
+            if(options.outerImage === undefined){
                 ctx.beginPath();
                 ctx.fillStyle = options.outerFillStyle || 'rgb(255,165,0)';
                 ctx.strokeStyle = 'black';
@@ -397,9 +506,6 @@ class PreloaderMultiple{
             e.preventDefault();
             startX = Math.floor(e.touches[0].clientX);
             startY = Math.floor(e.touches[0].clientY);
-            if(startY < ctx.canvas.height/2){
-                jLift = false;
-            }
             //start.innerHTML = 'Sx:- ' + startX + ' Sy:- ' + startY;
         }
         if(e.touches.length == 2){
@@ -413,13 +519,9 @@ class PreloaderMultiple{
     
     function handleEnd(e) {
         endY = Math.floor(e.changedTouches[event.changedTouches.length - 1].pageY);
-        if(endY < ctx.canvas.height/2){
             ended = true;
             move = false;
             startA = false;
-            jLift = true;
-            
-        }
             e.preventDefault();
             endX = Math.floor(e.changedTouches[event.changedTouches.length - 1].pageX);
             
@@ -669,16 +771,24 @@ class PreloaderMultiple{
             this.height = height;
             this.makeTouch = false;
             if(this.src){
-                this.image = new Image();
-                this.image.src = this.src;
+                if(typeof(this.src) == "string"){
+                    this.image = new Image();
+                    this.image.src = this.src;
+                }
             }
         }
         draw(c){
             if(this.src){
-                c.drawImage(this.image, this.x, this.y, this.width, this.height);
+                if(typeof(this.src) == "string"){
+                    c.drawImage(this.image, this.x, this.y, this.width, this.height);
+                }else{
+                    c.drawImage(this.src, this.x, this.y, this.width, this.height);
+                }
             }else{
                 c.beginPath();
+                c.fillStyle = "green";
                 c.fillRect(this.x, this.y, this.width, this.height);
+                c.closePath();
             }
 
         }
@@ -691,7 +801,7 @@ class PreloaderMultiple{
                 let x = e.touches[i].clientX;
                 let y = e.touches[i].clientY;
                 if(x > this.x && y > this.y && x < this.x + this.width && y < this.y + this.height){
-                    if(this.touch == false && this.makeTouch == false){
+                    if(this.touch == false){
                         this.touch = true; 
                     }
                 }
@@ -726,15 +836,15 @@ class PreloaderMultiple{
         }
         update(c){
             if(this.custom){
-                c.strokeRect(c.canvas.width / 2, 10, 80, 20);
+                c.strokeRect(ctx.canvas.width / 2, 10, 80, 20);
                 c.font = "20px Verdana";
-                var gradient = c.createLinearGradient(0, 0, c.canvas.width, 0);
+                var gradient = c.createLinearGradient(0, 0, ctx.canvas.width, 0);
                 gradient.addColorStop("0"," magenta");
                 gradient.addColorStop("0.5", "blue");
                 gradient.addColorStop("1.0", "red");
                 c.fillStyle = gradient;
-                c.fillText("Done", c.canvas.width / 2 + 18, 28);
-                if(cX > c.canvas.width / 2 && cY > 10 && cX < c.canvas.width/2 + 80 && cY < 40){
+                c.fillText("Done", ctx.canvas.width / 2 + 18, 28);
+                if(cX > ctx.canvas.width / 2 && cY > 10 && cX < ctx.canvas.width/2 + 80 && cY < 40){
                     this.doneCustom();
                     c.canvas.removeEventListener("touchstart",this.handle);
                     cX = 0;
@@ -751,6 +861,16 @@ class PreloaderMultiple{
         }
     }
 
+    /**********CAMERA***********/
+
+class Camera{
+    constructor(image){
+        this.image = image;
+    }
+    follow(obj){
+        ctx.drawImage(this.image, obj.x-50, obj.y-50, this.image.width-50, this.image.height-50, 0, 0, ctx.canvas.width, ctx.canvas.height);
+    }
+}
 
 
       /*************
@@ -809,24 +929,26 @@ class PreloaderMultiple{
     /*************ALL-PRELOADER*************/
 
     function allPromisesLoaded(names){
-        let weirdPromise = new Promise((res, rej)=>{
-        Promise.all(goc.promises).then(data => {
-                let obj = {};
-                for(let i = 0; i < data.length; i++){
-                    obj[names[i]] = data[i];
-                    if(i == (data.length - 1)){
-                        res(obj);
-                        goc.loadingFinish = true;
+            let weirdPromise = new Promise((res, rej)=>{
+            Promise.all(goc.promises).then(data => {
+                    let obj = {};
+                    for(let i = 0; i < data.length; i++){
+                        obj[names[i]] = data[i];
+                        if(i == (data.length - 1)){
+                            res(obj);
+                            goc.assets = obj;
+                            goc.loadingFinish = true;
+                        }
                     }
-                }
+                });
             });
-        });
-        return weirdPromise;
+            return weirdPromise;
     }
+
+    //****LOADING ANIMATION***/
 
     /****SINGLETON*****/
 
-    
     function single(a, cb){
         if(a){
             cb();
@@ -1092,7 +1214,91 @@ class PreloaderMultiple{
         }
         ,allAssetsLoaded : function(names){
             return allPromisesLoaded(names);
+        },
+        asyncMultipleLoader : function(src, type){
+            return new AsynPreloaderMultiple(src, type);
+        }
+        ,gradient : function(c){
+            var gradient = c.createLinearGradient(0, 0, ctx.canvas.width, 0);
+            gradient.addColorStop("0"," magenta");
+            gradient.addColorStop("0.5", "blue");
+            gradient.addColorStop("1.0", "red");
+            return gradient;
+        }
+        ,camera : function(obj){
+            return new Camera(obj);
+        }
+        ,loadingAnimation : function(c, e, promises){
+            if(this.loader){
+                if(this.loadingFinish == false){
+                    global.loadedTrue = this.singleTon(global.loadedTrue, ()=>{
+                        promises.forEach(promise =>{
+                            promise.then((a)=>{
+                                global.loadedItems++;
+                            });
+                        });
+                });
+                    global.someTrue = this.singleTon(global.someTrue, ()=>{
+                        global.spriteOptions = {
+                            image : this.imager,
+                            cols : 8,
+                            rows : 1
+                        }
+                        global.sprite = this.combinedSprite(ctx.canvas.width/2-50, ctx.canvas.height/2-50, 100, 100, global.spriteOptions);
+                        global.sprite.setOptions(global.spriteOptions);
+                        global.text = "Loading Assets..";
+                        global.i = 0;
+                        global.finalText = "";
+                    });
+                    global.i++;
+                    c.beginPath();
+                    c.fillStyle = "black";
+                    c.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                    c.closePath();
+                    global.sprite.draw(c, e, global.spriteOptions);
+                    if(global.i % 50 == 0){
+                        global.text += ".";
+                    }
+                    if(global.i % 103 == 0){
+                        global.text += ".";
+                    }
+                    if(global.i % 203 == 0){
+                        global.text = "Loading Assets";
+                    }
+                    c.beginPath();
+                    c.font = "30px Verdana";
+                    c.fillStyle = this.gradient(c);
+                    c.fillText(global.text, global.sprite.x-30, canvas.height/2 - 70);
+                    c.closePath();
+                    c.beginPath();
+                    c.font = "15px Verdana";
+                    c.fillStyle = this.gradient(c);
+                    c.fillText(`LOADED : ${global.loadedItems} / ${promises.length}`, canvas.width/2-50, canvas.height/2 + 80);
+                    c.font = "20px Verdana";
+                    c.fillText("Powered By GOC", 0, canvas.height - 30);
+                    c.closePath();
+                }
+            }
+        }
+        ,particle(pos, vel, acc){
+            return new Particle(pos, vel, acc);
+        }   
+    }
+    
+    window.GOC = {
+        getGoc : function(){
+            var pro = new Promise((res, rej)=>{
+                var image = new Image();
+                image.src = "https://gocscript.000webhostapp.com/loadingIMG.png";
+                image.onload = () =>{
+                    goc.imager = image;
+                    goc.loader = true;
+                    res(goc);
+                }
+            });
+            return pro;
         }
     }
-    return goc;
+
+    return GOC;
 }());
